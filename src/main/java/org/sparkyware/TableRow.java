@@ -1,5 +1,8 @@
 package org.sparkyware;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 
 import org.jsoup.nodes.Element;
@@ -15,6 +18,18 @@ public class TableRow {
 	populate();
     }
 
+    /**
+     * Construct a TableRow with a specific set of string values.
+     */
+    public TableRow(String string, String string2, String string3, String string4, String string5) {
+	valueStrings = new ArrayList<String>();
+	valueStrings.add(string);
+	valueStrings.add(string2);
+	valueStrings.add(string3);
+	valueStrings.add(string4);
+	valueStrings.add(string5);
+    }
+
     private void populate() {
 	valueStrings = new ArrayList<String>();
 
@@ -22,6 +37,8 @@ public class TableRow {
 	    // System.out.println(aRowCell.text());
 	    valueStrings.add(aRowCell.text());
 	}
+	// This is a hack, removing the outermost tbody element.
+	// FIXME should resolve this in the original document parsing, not here
 	valueStrings.remove(0);
     }
 
@@ -40,11 +57,25 @@ public class TableRow {
      * @return Comma-separated value representation
      */
     public String toCSV() {
+	DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM d, uuuu");
 	StringBuffer buffer = new StringBuffer();
 	for (String value : valueStrings) {
+
+	    // Change date string from "Mmm dd, YYYY" to "YYYY-mm-dd"
+	    // FIXME not the right place to do this
+	    try {
+		LocalDate date = LocalDate.parse(value, formatter);
+		value = date.format(DateTimeFormatter.ISO_DATE);
+	    } catch (DateTimeParseException e) {
+		// e.printStackTrace();
+	    }
+
 	    buffer.append(value).append(",");
 	}
+
+	// Remove final comma
 	buffer.deleteCharAt(buffer.length() - 1);
+
 	return buffer.toString();
     }
 
