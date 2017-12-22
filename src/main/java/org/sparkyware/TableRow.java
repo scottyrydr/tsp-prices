@@ -19,6 +19,23 @@ public class TableRow {
     }
 
     /**
+     * Construct a TableRow based on a comma-separated string
+     * 
+     * @param csvString
+     */
+    public TableRow(String csvString) {
+	valueStrings = new ArrayList<String>();
+
+	for (String cellValue : csvString.split(",")) {
+	    // Remove spaces at beginning of a cell value
+	    cellValue = cellValue.replaceAll("^ ", "");
+	    valueStrings.add(cellValue);
+//	    System.out.println(cellValue);
+	}
+
+    }
+
+    /**
      * Construct a TableRow with a specific set of string values.
      */
     public TableRow(String string, String string2, String string3, String string4, String string5) {
@@ -30,6 +47,9 @@ public class TableRow {
 	valueStrings.add(string5);
     }
 
+    /**
+     * Populate a TableRow object from the Document Element objects.
+     */
     private void populate() {
 	valueStrings = new ArrayList<String>();
 
