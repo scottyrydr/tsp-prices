@@ -1,7 +1,9 @@
 package org.sparkyware;
 
 import java.io.FileNotFoundException;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.Writer;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -163,6 +165,8 @@ public class TspFundPrices {
      * identified by the colNum parameter, identifying the column number in the full
      * price table.
      * 
+     * Each single fund row has values: date, fund price, 0, 0, 0
+     * 
      * @param colNum
      *            Chooses the fund for which to generate to the table
      * @return Table of share prices for a single fund over time
@@ -174,19 +178,22 @@ public class TspFundPrices {
 	TableRow firstRow = new TableRow("Date", "Close", "Low", "High", "Volume");
 	fundPriceRows.add(firstRow);
 
+	// From each multi-fund price row, pull the price from colNum and populate a new
+	// output row
 	for (Iterator<TableRow> iterator = tableRows.iterator(); iterator.hasNext();) {
 
 	    TableRow tableRow = (TableRow) iterator.next();
 	    ArrayList<String> valueStrings = tableRow.getValueStrings();
 
-	    // Skip the first row - if starts with "Date"
+	    // Skip rows starting with "Date"
 	    if (valueStrings.get(0).matches("[Dd]ate") || valueStrings.get(0).length() == 0) {
 		continue;
 	    }
 
-	    TableRow secondRow = new TableRow(valueStrings.get(0), valueStrings.get(colNum), Integer.toString(0),
+	    // output row is: date value, share price, 0, 0, 0
+	    TableRow aRow = new TableRow(valueStrings.get(0), valueStrings.get(colNum), Integer.toString(0),
 		    Integer.toString(0), Integer.toString(0));
-	    fundPriceRows.add(secondRow);
+	    fundPriceRows.add(aRow);
 	}
 	return fundPriceRows;
     }
@@ -218,9 +225,16 @@ public class TspFundPrices {
 	    ArrayList<TableRow> fundPriceRows = new ArrayList<TableRow>();
 	    System.out.println(aFund);
 	    fundPriceRows = priceGrabber.getSingleFundTable(aFund);
+
+	    StringBuilder sb = new StringBuilder();
 	    for (TableRow tableRow : fundPriceRows) {
-		System.out.println(tableRow.toCSV());
+		sb.append(tableRow.toCSV()).append("\n");
+		//System.out.println(tableRow.toCSV());
 	    }
+	    Writer writer = new FileWriter(aFund + ".csv");
+	    writer.append(sb);
+	    writer.close();
+
 	}
 
     }
