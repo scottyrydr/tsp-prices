@@ -4,7 +4,6 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
-
 import org.jsoup.nodes.Element;
 
 public class TableRow {
@@ -30,7 +29,7 @@ public class TableRow {
 	    // Remove spaces at beginning of a cell value
 	    cellValue = cellValue.replaceAll("^ ", "");
 	    valueStrings.add(cellValue);
-//	    System.out.println(cellValue);
+	    // System.out.println(cellValue);
 	}
 
     }
@@ -82,7 +81,7 @@ public class TableRow {
 	for (String value : valueStrings) {
 
 	    // Change date string from "Mmm dd, YYYY" to "YYYY-mm-dd"
-	    // FIXME not the right place to do this
+	    // FIXME not the right place to do this, and not efficient
 	    try {
 		LocalDate date = LocalDate.parse(value, formatter);
 		value = date.format(DateTimeFormatter.ISO_DATE);

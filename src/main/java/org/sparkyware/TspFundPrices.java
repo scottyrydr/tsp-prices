@@ -13,7 +13,6 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
-
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -229,7 +228,7 @@ public class TspFundPrices {
 	    StringBuilder sb = new StringBuilder();
 	    for (TableRow tableRow : fundPriceRows) {
 		sb.append(tableRow.toCSV()).append("\n");
-		//System.out.println(tableRow.toCSV());
+		// System.out.println(tableRow.toCSV());
 	    }
 	    Writer writer = new FileWriter(aFund + ".csv");
 	    writer.append(sb);
