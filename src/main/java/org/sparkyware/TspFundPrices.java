@@ -62,7 +62,7 @@ public class TspFundPrices {
      * Load a CSV file of fund prices and populate a collection of TableRow objects.
      * 
      * @param csvFileName
-     *            CSV File name
+     *                        CSV File name
      * @return
      */
     public void loadCsvPrices(String csvFileName) {
@@ -167,7 +167,7 @@ public class TspFundPrices {
      * Each single fund row has values: date, fund price, 0, 0, 0
      * 
      * @param colNum
-     *            Chooses the fund for which to generate to the table
+     *                   Chooses the fund for which to generate to the table
      * @return Table of share prices for a single fund over time
      */
     public ArrayList<TableRow> getSingleFundTable(int colNum) {
