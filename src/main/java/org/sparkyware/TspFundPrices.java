@@ -1,10 +1,13 @@
 package org.sparkyware;
 
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
 import java.net.URL;
+import java.nio.channels.Channels;
+import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -207,13 +210,17 @@ public class TspFundPrices {
 
 	TspFundPrices priceGrabber = new TspFundPrices();
 
-	URL siteUrl = new URL("https", "www.tsp.gov", "/InvestmentFunds/FundPerformance/index.html");
+	// https://secure.tsp.gov/components/CORS/getSharePrices.html?Lfunds=0&InvFunds=1&format=CSV&download=1
+	URL siteUrl = new URL("https", "secure.tsp.gov", "/components/CORS/getSharePrices.html?Lfunds=0&InvFunds=1&format=CSV&download=1");
 	if (cmd.hasOption("f")) {
 	    LOGGER.log(Level.INFO, "Attemting to load fund prices from file: " + cmd.getOptionValue("f"));
 	    priceGrabber.loadCsvPrices(cmd.getOptionValue("f"));
 	} else {
 	    LOGGER.log(Level.INFO, "Loading fund prices from website: " + siteUrl);
-	    priceGrabber = new TspFundPrices(siteUrl);
+	    ReadableByteChannel rbc = Channels.newChannel(siteUrl.openStream());
+	    FileOutputStream fos = new FileOutputStream("download.csv");
+	    fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
+	    priceGrabber.loadCsvPrices("download.csv");
 	}
 
 	// Get list of all fund names in the prices retrieved from the site
