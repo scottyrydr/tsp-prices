@@ -136,7 +136,7 @@ public class TspFundPrices {
 	    if (aFundName.matches("[Dd]ate")) {
 		continue;
 	    }
-	    fundNames.add(aFundName);
+	    fundNames.add(aFundName.trim());
 	}
 
 	return fundNames;
@@ -151,7 +151,7 @@ public class TspFundPrices {
 
 	int fundIndex = -1;
 	for (fundIndex = 0; fundIndex < firstRow.getValueStrings().size(); fundIndex++) {
-	    String fundName = firstRow.getValueStrings().get(fundIndex);
+	    String fundName = firstRow.getValueStrings().get(fundIndex).trim();
 	    if (fundName.equals(aFund)) {
 		break;
 	    }
