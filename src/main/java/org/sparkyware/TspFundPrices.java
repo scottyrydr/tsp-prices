@@ -44,7 +44,7 @@ public class TspFundPrices {
 	LOGGER.setLevel(Level.FINEST);
     }
 
-    public TspFundPrices(URL url) throws IOException {
+	public TspFundPrices(URL url) throws IOException {
 	super();
 	LOGGER.setLevel(Level.FINEST);
 
@@ -211,7 +211,7 @@ public class TspFundPrices {
 	// https://secure.tsp.gov/components/CORS/getSharePrices.html?Lfunds=0&InvFunds=1&format=CSV&download=1
 	URL siteUrl = new URL("https", "secure.tsp.gov", "/components/CORS/getSharePrices.html?Lfunds=0&InvFunds=1&format=CSV&download=1");
 	if (cmd.hasOption("f")) {
-	    LOGGER.log(Level.INFO, "Attemting to load fund prices from file: " + cmd.getOptionValue("f"));
+	    LOGGER.log(Level.INFO, "Attempting to load fund prices from file: " + cmd.getOptionValue("f"));
 	    priceGrabber.loadCsvPrices(cmd.getOptionValue("f"));
 	} else {
 	    LOGGER.log(Level.INFO, "Loading fund prices from website: " + siteUrl);
