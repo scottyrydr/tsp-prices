@@ -37,7 +37,7 @@ public class TspFundPrices {
      * Element holding the share price table details
      */
     private Element priceTable;
-    private static ArrayList<TableRow> tableRows = new ArrayList<TableRow>();
+    private static ArrayList<TableRow> tableRows = new ArrayList<>();
 
     public TspFundPrices() {
 	super();
@@ -101,14 +101,13 @@ public class TspFundPrices {
      *         table.
      */
     private ArrayList<TableRow> genFullPriceTables() {
-	ArrayList<TableRow> tableRows = new ArrayList<TableRow>();
+	ArrayList<TableRow> tableRows = new ArrayList<>();
 
-	for (Iterator<Element> iterator = this.priceTable.getElementsByTag("tr").iterator(); iterator.hasNext();) {
-	    Element anElement = (Element) iterator.next();
-	    // System.out.println("anElement: " + anElement.text());
-	    TableRow aTableRow = new TableRow(anElement);
-	    tableRows.add(aTableRow);
-	}
+		for (Element anElement : this.priceTable.getElementsByTag("tr")) {
+			// System.out.println("anElement: " + anElement.text());
+			TableRow aTableRow = new TableRow(anElement);
+			tableRows.add(aTableRow);
+		}
 	return tableRows;
     }
 
@@ -119,7 +118,7 @@ public class TspFundPrices {
      */
     public List<String> getFundNames() {
 
-	List<String> fundNames = new ArrayList<String>();
+	List<String> fundNames = new ArrayList<>();
 
 	// Find row that has "[Dd]ate" as first value
 	TableRow firstRow = tableRows.get(1);
@@ -144,12 +143,12 @@ public class TspFundPrices {
 
     private ArrayList<TableRow> getSingleFundTable(String aFund) {
 
-	ArrayList<TableRow> fundTableRows = new ArrayList<TableRow>();
+	ArrayList<TableRow> fundTableRows;
 
 	// Find aFund in the first row to get its index
 	TableRow firstRow = tableRows.get(0);
 
-	int fundIndex = -1;
+	int fundIndex;
 	for (fundIndex = 0; fundIndex < firstRow.getValueStrings().size(); fundIndex++) {
 	    String fundName = firstRow.getValueStrings().get(fundIndex).trim();
 	    if (fundName.equals(aFund)) {
@@ -175,28 +174,27 @@ public class TspFundPrices {
      */
     public ArrayList<TableRow> getSingleFundTable(int colNum) {
 
-	ArrayList<TableRow> fundPriceRows = new ArrayList<TableRow>();
+	ArrayList<TableRow> fundPriceRows = new ArrayList<>();
 
 	TableRow firstRow = new TableRow("Date", "Close", "Low", "High", "Volume");
 	fundPriceRows.add(firstRow);
 
 	// From each multi-fund price row, pull the price from colNum and populate a new
 	// output row
-	for (Iterator<TableRow> iterator = tableRows.iterator(); iterator.hasNext();) {
+		for (TableRow tableRow : tableRows) {
 
-	    TableRow tableRow = (TableRow) iterator.next();
-	    ArrayList<String> valueStrings = tableRow.getValueStrings();
+			ArrayList<String> valueStrings = tableRow.getValueStrings();
 
-	    // Skip rows starting with "Date"
-	    if (valueStrings.get(0).matches("[Dd]ate") || valueStrings.get(0).length() == 0) {
-		continue;
-	    }
+			// Skip rows starting with "Date"
+			if (valueStrings.get(0).matches("[Dd]ate") || valueStrings.get(0).length() == 0) {
+				continue;
+			}
 
-	    // output row is: date value, share price, 0, 0, 0
-	    TableRow aRow = new TableRow(valueStrings.get(0), valueStrings.get(colNum), Integer.toString(0),
-		    Integer.toString(0), Integer.toString(0));
-	    fundPriceRows.add(aRow);
-	}
+			// output row is: date value, share price, 0, 0, 0
+			TableRow aRow = new TableRow(valueStrings.get(0), valueStrings.get(colNum), Integer.toString(0),
+					Integer.toString(0), Integer.toString(0));
+			fundPriceRows.add(aRow);
+		}
 	return fundPriceRows;
     }
 
@@ -228,7 +226,7 @@ public class TspFundPrices {
 
 	// For each fund, generate a price table
 	for (String aFund : fundNames) {
-	    ArrayList<TableRow> fundPriceRows = new ArrayList<TableRow>();
+	    ArrayList<TableRow> fundPriceRows;
 	    System.out.println(aFund);
 	    fundPriceRows = priceGrabber.getSingleFundTable(aFund);
 
