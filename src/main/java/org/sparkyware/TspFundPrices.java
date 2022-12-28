@@ -41,7 +41,7 @@ public class TspFundPrices {
         LOGGER.setLevel(Level.FINEST);
 
         LOGGER.log(Level.INFO, "Connecting to TSP website for prices...");
-        Document doc = Jsoup.connect(url.toString()).get();
+        Document doc = Jsoup.connect(url.toString()).userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 13.1; rv:108.0) Gecko/20100101 Firefox/108.0").get();
 
         String title = doc.title();
         LOGGER.log(Level.INFO, "Successfully loaded TSP page: " + title);
@@ -204,8 +204,9 @@ public class TspFundPrices {
             priceGrabber.loadCsvPrices(cmd.getOptionValue("f"));
         }
         else {
-            URL siteUrl = new URL("https", "tsp.gov", "/fund-performance/share-price-history/index.html");
+            URL siteUrl = new URL("https", "tsp.gov", "/share-price-history/");
             LOGGER.log(Level.INFO, "Loading fund prices from website: " + siteUrl);
+            priceGrabber = new TspFundPrices(siteUrl);
             ReadableByteChannel rbc = Channels.newChannel(siteUrl.openStream());
             FileOutputStream fos = new FileOutputStream("download.csv");
             fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
