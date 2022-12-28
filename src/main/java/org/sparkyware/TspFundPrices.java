@@ -1,10 +1,11 @@
 package org.sparkyware;
 
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.Writer;
+import org.apache.commons.cli.*;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+
+import java.io.*;
 import java.net.URL;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
@@ -16,15 +17,6 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
-
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
 
 /**
  * @author scott
@@ -207,13 +199,12 @@ public class TspFundPrices {
         TspFundPrices priceGrabber = new TspFundPrices();
 
         // https://secure.tsp.gov/components/CORS/getSharePrices.html?Lfunds=0&InvFunds=1&format=CSV&download=1
-        URL siteUrl = new URL("https", "secure.tsp.gov",
-                "/components/CORS/getSharePrices.html?Lfunds=0&InvFunds=1&format=CSV&download=1");
         if (cmd.hasOption("f")) {
             LOGGER.log(Level.INFO, "Attempting to load fund prices from file: " + cmd.getOptionValue("f"));
             priceGrabber.loadCsvPrices(cmd.getOptionValue("f"));
         }
         else {
+            URL siteUrl = new URL("https", "tsp.gov", "/fund-performance/share-price-history/index.html");
             LOGGER.log(Level.INFO, "Loading fund prices from website: " + siteUrl);
             ReadableByteChannel rbc = Channels.newChannel(siteUrl.openStream());
             FileOutputStream fos = new FileOutputStream("download.csv");
