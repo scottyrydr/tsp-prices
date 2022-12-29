@@ -1,21 +1,19 @@
 package org.sparkyware;
 
+import org.openqa.selenium.By;
+import org.openqa.selenium.WebElement;
+
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 
-import org.jsoup.nodes.Element;
-
 public class TableRow {
 
     private ArrayList<String> valueStrings = null;
 
-    private Element rowElement;
-
-    public TableRow(Element aRow) {
-        this.rowElement = aRow;
-        populate();
+    public TableRow(WebElement aRow, String xpath) {
+        populate(aRow, xpath);
     }
 
     /**
@@ -24,7 +22,7 @@ public class TableRow {
      * @param csvString
      */
     public TableRow(String csvString) {
-        valueStrings = new ArrayList<String>();
+        valueStrings = new ArrayList<>();
 
         for (String cellValue : csvString.split(",")) {
             // Remove spaces at beginning of a cell value
@@ -39,7 +37,7 @@ public class TableRow {
      * Construct a TableRow with a specific set of string values.
      */
     public TableRow(String string, String string2, String string3, String string4, String string5) {
-        valueStrings = new ArrayList<String>();
+        valueStrings = new ArrayList<>();
         valueStrings.add(string);
         valueStrings.add(string2);
         valueStrings.add(string3);
@@ -48,18 +46,18 @@ public class TableRow {
     }
 
     /**
-     * Populate a TableRow object from the Document Element objects.
+     * Populate a TableRow object from the WebElement objects, searching for objects using the provided xpath.
      */
-    private void populate() {
-        valueStrings = new ArrayList<String>();
+    private void populate(WebElement anElement, String xpath) {
+        valueStrings = new ArrayList<>();
 
-        for (Element aRowCell : rowElement.getAllElements()) {
-            // System.out.println(aRowCell.text());
-            valueStrings.add(aRowCell.text());
+        for (WebElement aRowCell : anElement.findElements(By.xpath(xpath))) {
+            //System.out.println(aRowCell.getText());
+            valueStrings.add(aRowCell.getText());
         }
         // This is a hack, removing the outermost tbody element.
         // FIXME should resolve this in the original document parsing, not here
-        valueStrings.remove(0);
+        //valueStrings.remove(0);
     }
 
     /**
@@ -78,7 +76,7 @@ public class TableRow {
      */
     public String toCSV() {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM d, uuuu");
-        StringBuffer buffer = new StringBuffer();
+        StringBuilder buffer = new StringBuilder();
         for (String value : valueStrings) {
 
             // Change date string from "Mmm dd, YYYY" to "YYYY-mm-dd"

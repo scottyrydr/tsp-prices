@@ -1,14 +1,17 @@
 package org.sparkyware;
 
+import io.github.bonigarcia.wdm.WebDriverManager;
 import org.apache.commons.cli.*;
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
+import org.openqa.selenium.By;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.chrome.ChromeDriver;
 
-import java.io.*;
+import java.io.FileNotFoundException;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.Writer;
 import java.net.URL;
-import java.nio.channels.Channels;
-import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -26,31 +29,54 @@ public class TspFundPrices {
     private final static Logger LOGGER = Logger.getLogger(TspFundPrices.class.getName());
 
     /**
-     * Element holding the share price table details
+     * Element holding the share price table header row
      */
-    private Element priceTable;
-    private static ArrayList<TableRow> tableRows = new ArrayList<>();
+    private ArrayList<WebElement> headerRowElements;
+
+    /**
+     * Share price body row elements
+     */
+    private ArrayList<WebElement> bodyRowElements;
+    /**
+     * Share price row values, internal representation
+     */
+    private ArrayList<TableRow> tableRows;
+    private WebDriver driver;
 
     public TspFundPrices() {
-        super();
         LOGGER.setLevel(Level.FINEST);
+        tableRows = new ArrayList<>();
     }
 
     public TspFundPrices(URL url) throws IOException {
-        super();
         LOGGER.setLevel(Level.FINEST);
+        tableRows = new ArrayList<>();
 
         LOGGER.log(Level.INFO, "Connecting to TSP website for prices...");
-        Document doc = Jsoup.connect(url.toString()).userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 13.1; rv:108.0) Gecko/20100101 Firefox/108.0").get();
+        WebDriverManager.chromedriver().setup();
 
-        String title = doc.title();
+        driver = new ChromeDriver();
+        driver.get(url.toString());
+
+        String title = driver.getTitle();
         LOGGER.log(Level.INFO, "Successfully loaded TSP page: " + title);
 
-        priceTable = doc.select("tbody").get(1);
+        // Pull cells from thead/tr elements - these are the column headings
+        headerRowElements = (ArrayList<WebElement>) driver.findElements(By.xpath("//thead/tr"));
+        LOGGER.log(Level.INFO, "Found " + headerRowElements.size() + " 'tr' elements in thead");
+
+        // Extract elements from tbody - these are the prices
+        bodyRowElements = (ArrayList<WebElement>) driver.findElements(By.xpath("//tbody/tr"));
+        LOGGER.log(Level.INFO, "Found " + bodyRowElements.size() + " 'tr' elements in tbody");
 
         // Transform original web page table into array of TableRow objects
         tableRows = genFullPriceTables();
+    }
 
+    private void shutdownDriver() {
+        if (driver != null) {
+            driver.quit();
+        }
     }
 
     /**
@@ -85,18 +111,23 @@ public class TspFundPrices {
     }
 
     /**
-     * Iterate through the web page elements and construct direct representation of
+     * Iterate through the WebElement elements and construct direct representation of
      * the pricing table.
      *
      * @return List of TableRow objects representing original web page pricing
      * table.
      */
     private ArrayList<TableRow> genFullPriceTables() {
-        ArrayList<TableRow> tableRows = new ArrayList<>();
 
-        for (Element anElement : this.priceTable.getElementsByTag("tr")) {
-            // System.out.println("anElement: " + anElement.text());
-            TableRow aTableRow = new TableRow(anElement);
+        for (WebElement anElement : this.headerRowElements) {
+            LOGGER.log(Level.FINE, "Raw row from table: {0}", anElement.getText());
+            TableRow aTableRow = new TableRow(anElement, "th");
+            tableRows.add(aTableRow);
+        }
+
+        for (WebElement anElement : this.bodyRowElements) {
+            LOGGER.log(Level.FINE, "Raw row from table: {0}", anElement.getText());
+            TableRow aTableRow = new TableRow(anElement, "th|td");
             tableRows.add(aTableRow);
         }
         return tableRows;
@@ -198,7 +229,11 @@ public class TspFundPrices {
 
         TspFundPrices priceGrabber = new TspFundPrices();
 
-        // https://secure.tsp.gov/components/CORS/getSharePrices.html?Lfunds=0&InvFunds=1&format=CSV&download=1
+        /*
+         https://secure.tsp.gov/components/CORS/getSharePrices.html?Lfunds=0&InvFunds=1&format=CSV&download=1
+         Choose source type (file vs URL) and use TspFundPrices methods to load/parse and create
+         internal representations of the share prices
+        */
         if (cmd.hasOption("f")) {
             LOGGER.log(Level.INFO, "Attempting to load fund prices from file: " + cmd.getOptionValue("f"));
             priceGrabber.loadCsvPrices(cmd.getOptionValue("f"));
@@ -207,32 +242,31 @@ public class TspFundPrices {
             URL siteUrl = new URL("https", "tsp.gov", "/share-price-history/");
             LOGGER.log(Level.INFO, "Loading fund prices from website: " + siteUrl);
             priceGrabber = new TspFundPrices(siteUrl);
-            ReadableByteChannel rbc = Channels.newChannel(siteUrl.openStream());
-            FileOutputStream fos = new FileOutputStream("download.csv");
-            fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
-            priceGrabber.loadCsvPrices("download.csv");
         }
 
         // Get list of all fund names in the prices retrieved from the site
         List<String> fundNames = priceGrabber.getFundNames();
 
-        // For each fund, generate a price table
+        // For each fund, generate a string of prices with one line per daily price
         for (String aFund : fundNames) {
             ArrayList<TableRow> fundPriceRows;
             System.out.println(aFund);
             fundPriceRows = priceGrabber.getSingleFundTable(aFund);
 
+            // Iterate through prices for a single fund, generate output string
             StringBuilder sb = new StringBuilder();
             for (TableRow tableRow : fundPriceRows) {
                 sb.append(tableRow.toCSV()).append("\n");
                 // System.out.println(tableRow.toCSV());
             }
+
+            // Write the fund's prices to CSV file
             Writer writer = new FileWriter(aFund + ".csv");
             writer.append(sb);
             writer.close();
-
         }
 
+        priceGrabber.shutdownDriver();
     }
 
 }
