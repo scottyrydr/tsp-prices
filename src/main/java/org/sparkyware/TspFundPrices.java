@@ -44,12 +44,12 @@ public class TspFundPrices {
     private WebDriver driver;
 
     public TspFundPrices() {
-        LOGGER.setLevel(Level.FINEST);
+        LOGGER.setLevel(Level.INFO);
         tableRows = new ArrayList<>();
     }
 
     public TspFundPrices(URL url) throws IOException {
-        LOGGER.setLevel(Level.FINEST);
+        LOGGER.setLevel(Level.INFO);
         tableRows = new ArrayList<>();
 
         LOGGER.log(Level.INFO, "Connecting to TSP website for prices...");
@@ -211,9 +211,10 @@ public class TspFundPrices {
                 continue;
             }
 
-            // output row is: date value, share price, 0, 0, 0
-            TableRow aRow = new TableRow(valueStrings.get(0), valueStrings.get(colNum), Integer.toString(0),
-                    Integer.toString(0), Integer.toString(0));
+            // Single fund/single day output row is: date value, share price, 0, 0, 0
+            // WebElement prices include "$" pre-pended, need to remove that
+            TableRow aRow = new TableRow(valueStrings.get(0), valueStrings.get(colNum).replaceAll("^[$]", ""),
+                    Integer.toString(0), Integer.toString(0), Integer.toString(0));
             fundPriceRows.add(aRow);
         }
         return fundPriceRows;
