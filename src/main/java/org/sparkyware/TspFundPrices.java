@@ -6,6 +6,9 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
@@ -14,6 +17,7 @@ import java.io.Writer;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -53,20 +57,28 @@ public class TspFundPrices {
         tableRows = new ArrayList<>();
 
         LOGGER.log(Level.INFO, "Connecting to TSP website for prices...");
+        ChromeOptions options = new ChromeOptions();
+        options.addArguments("--remote-allow-origins=*");
+
         WebDriverManager.chromedriver().setup();
 
-        driver = new ChromeDriver();
+        driver = new ChromeDriver(options);
         driver.get(url.toString());
 
         String title = driver.getTitle();
         LOGGER.log(Level.INFO, "Successfully loaded TSP page: " + title);
 
+        // Wait for browser to load dynamic content
+        WebElement firstResult = new WebDriverWait(driver, Duration.ofSeconds(10)).until(
+                ExpectedConditions.presenceOfElementLocated(By.xpath("//table/thead/tr")));
+        LOGGER.log(Level.INFO, "Dynamic table is present");
+
         // Pull cells from thead/tr elements - these are the column headings
-        headerRowElements = (ArrayList<WebElement>) driver.findElements(By.xpath("//thead/tr"));
+        headerRowElements = (ArrayList<WebElement>) driver.findElements(By.xpath("//table/thead/tr"));
         LOGGER.log(Level.INFO, "Found " + headerRowElements.size() + " 'tr' elements in thead");
 
         // Extract elements from tbody - these are the prices
-        bodyRowElements = (ArrayList<WebElement>) driver.findElements(By.xpath("//tbody/tr"));
+        bodyRowElements = (ArrayList<WebElement>) driver.findElements(By.xpath("//table/tbody/tr"));
         LOGGER.log(Level.INFO, "Found " + bodyRowElements.size() + " 'tr' elements in tbody");
 
         // Transform original web page table into array of TableRow objects
