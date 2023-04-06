@@ -19,7 +19,7 @@ public class TableRow {
     /**
      * Construct a TableRow based on a comma-separated string
      *
-     * @param csvString
+     * @param csvString String containing comma-separated values to be parsed
      */
     public TableRow(String csvString) {
         valueStrings = new ArrayList<>();
@@ -55,9 +55,7 @@ public class TableRow {
             //System.out.println(aRowCell.getText());
             valueStrings.add(aRowCell.getText());
         }
-        // This is a hack, removing the outermost tbody element.
-        // FIXME should resolve this in the original document parsing, not here
-        //valueStrings.remove(0);
+
     }
 
     /**
