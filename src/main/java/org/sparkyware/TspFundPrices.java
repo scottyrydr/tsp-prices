@@ -14,6 +14,8 @@ import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -52,7 +54,7 @@ public class TspFundPrices {
         tableRows = new ArrayList<>();
     }
 
-    public TspFundPrices(URL url) throws IOException {
+    public TspFundPrices(URL url) {
         LOGGER.setLevel(Level.INFO);
         tableRows = new ArrayList<>();
 
@@ -232,7 +234,7 @@ public class TspFundPrices {
         return fundPriceRows;
     }
 
-    public static void main(String[] args) throws IOException, ParseException {
+    public static void main(String[] args) throws IOException, ParseException, URISyntaxException {
 
         // Set up command line options and parsing
         Options options = new Options();
@@ -252,7 +254,7 @@ public class TspFundPrices {
             priceGrabber.loadCsvPrices(cmd.getOptionValue("f"));
         }
         else {
-            URL siteUrl = new URL("https", "tsp.gov", "/share-price-history/");
+            URL siteUrl = new URI("https", "tsp.gov/share-price-history", null).toURL();
             LOGGER.log(Level.INFO, "Loading fund prices from website: " + siteUrl);
             priceGrabber = new TspFundPrices(siteUrl);
         }
