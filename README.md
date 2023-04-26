@@ -25,6 +25,6 @@ version of Chrome is installed. Testing was done using Chrome Version 112.0.5615
 You must first navigate to the TSP website using a browser of your choice, manually retrieve the desired share price
 history
 and click the appropriate button to download that as a CSV from the TSP website.
-Then you execute the tsp-prices program with the "-f <filename.csv>" command (with the correct
+Then you execute the tsp-prices program with the "-f <filename.csv>" option (with the correct
 name of the downloaded CSV file). The program will transform the information
 in the CSV file into one or more CSV files in the correct format for Quicken.
