@@ -68,15 +68,22 @@ public class TableRow {
     }
 
     /**
-     * Return this TableRow represented as comma-separated values.
+     * Return this TableRow represented as comma-separated values, with fund symbol prepended.
      *
      * @return Comma-separated value representation
      */
-    public String toCSV() {
+    public String toCSV(String fundSymbol) {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM d, uuuu");
         StringBuilder buffer = new StringBuilder();
         for (String value : valueStrings) {
 
+            /*
+            if(buffer.length() == 0 && fundSymbol != null) {
+                buffer.append(fundSymbol).append(",");
+            }
+
+             */
+            
             // Change date string from "Mmm dd, YYYY" to "YYYY-mm-dd"
             // FIXME not the right place to do this, and not efficient
             try {

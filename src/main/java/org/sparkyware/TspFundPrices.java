@@ -21,6 +21,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.logging.Level;
@@ -50,12 +51,10 @@ public class TspFundPrices {
     private WebDriver driver;
 
     public TspFundPrices() {
-        LOGGER.setLevel(Level.INFO);
         tableRows = new ArrayList<>();
     }
 
     public TspFundPrices(URL url) {
-        LOGGER.setLevel(Level.INFO);
         tableRows = new ArrayList<>();
 
         LOGGER.log(Level.INFO, "Connecting to TSP website for prices...");
@@ -84,7 +83,7 @@ public class TspFundPrices {
         LOGGER.log(Level.INFO, "Found " + bodyRowElements.size() + " 'tr' elements in tbody");
 
         // Transform original web page table into array of TableRow objects
-        tableRows = genFullPriceTables();
+        tableRows = genTableRowList();
     }
 
     private void shutdownDriver() {
@@ -131,7 +130,7 @@ public class TspFundPrices {
      * @return List of TableRow objects representing original web page pricing
      * table.
      */
-    private ArrayList<TableRow> genFullPriceTables() {
+    private ArrayList<TableRow> genTableRowList() {
 
         for (WebElement anElement : this.headerRowElements) {
             LOGGER.log(Level.FINE, "Raw row from table: {0}", anElement.getText());
@@ -177,6 +176,16 @@ public class TspFundPrices {
         return fundNames;
     }
 
+    /**
+     * Generate list of share price TableRow Objects for a single fund. The specific fund is
+     * identified by the aFund parameter, which is the fund name as found in the
+     * first row of the full price table.
+     * <p>
+     * Each single fund row has values: date, fund price, 0, 0, 0
+     *
+     * @param aFund Name of the fund for which to generate to the table
+     * @return List of TableRow objects representing share prices for a single fund
+     */
     private ArrayList<TableRow> getSingleFundTable(String aFund) {
 
         ArrayList<TableRow> fundTableRows;
@@ -184,15 +193,15 @@ public class TspFundPrices {
         // Find aFund in the first row to get its index
         TableRow firstRow = tableRows.get(0);
 
-        int fundIndex;
-        for (fundIndex = 0; fundIndex < firstRow.getValueStrings().size(); fundIndex++) {
-            String fundName = firstRow.getValueStrings().get(fundIndex).trim();
+        int fundColumnIndex;   // Column Index of the fund in the full price table
+        for (fundColumnIndex = 0; fundColumnIndex < firstRow.getValueStrings().size(); fundColumnIndex++) {
+            String fundName = firstRow.getValueStrings().get(fundColumnIndex).trim();
             if (fundName.equals(aFund)) {
                 break;
             }
         }
 
-        fundTableRows = getSingleFundTable(fundIndex);
+        fundTableRows = getSingleFundTable(fundColumnIndex);
 
         return fundTableRows;
     }
@@ -211,9 +220,6 @@ public class TspFundPrices {
 
         ArrayList<TableRow> fundPriceRows = new ArrayList<>();
 
-        TableRow firstRow = new TableRow("Date", "Close", "Low", "High", "Volume");
-        fundPriceRows.add(firstRow);
-
         // From each multi-fund price row, pull the price from colNum and populate a new
         // output row
         for (TableRow tableRow : tableRows) {
@@ -221,7 +227,7 @@ public class TspFundPrices {
             ArrayList<String> valueStrings = tableRow.getValueStrings();
 
             // Skip rows starting with "Date"
-            if (valueStrings.get(0).matches("[Dd]ate") || valueStrings.get(0).length() == 0) {
+            if (valueStrings.get(0).matches("[Dd]ate") || valueStrings.get(0).isEmpty()) {
                 continue;
             }
 
@@ -236,11 +242,35 @@ public class TspFundPrices {
 
     public static void main(String[] args) throws IOException, ParseException, URISyntaxException {
 
+        HashMap<String, String> fundSymbols = new HashMap<>();
+        fundSymbols.put("C Fund", "*CFXX");
+        fundSymbols.put("G Fund", "*GFXX");
+        fundSymbols.put("F Fund", "*FFXX");
+        fundSymbols.put("I Fund", "*IFXX");
+        fundSymbols.put("S Fund", "*SFXX");
+
         // Set up command line options and parsing
         Options options = new Options();
         options.addOption("f", true, "Input CSV file");
+        options.addOption("b", false, "Bulk mode - create consolidated CSV file of all funds");
+        options.addOption("h", false, "Help");
+        options.addOption("v", false, "Verbose logging");
         CommandLineParser parser = new DefaultParser();
         CommandLine cmd = parser.parse(options, args);
+
+        if (cmd.hasOption("v")) {
+            System.out.println("setting Logger level to FINE");
+            LOGGER.setLevel(Level.FINE);
+        }
+        else {
+            LOGGER.setLevel(Level.INFO);
+        }
+
+        if (cmd.hasOption("h")) {
+            HelpFormatter formatter = new HelpFormatter();
+            formatter.printHelp("TspFundPrices", options);
+            System.exit(0);
+        }
 
         TspFundPrices priceGrabber = new TspFundPrices();
 
@@ -262,6 +292,10 @@ public class TspFundPrices {
         // Get list of all fund names in the prices retrieved from the site
         List<String> fundNames = priceGrabber.getFundNames();
 
+        // Prepare to generate bulk output
+        StringBuilder bulkSb = new StringBuilder();
+        bulkSb.append("Symbol,Date,Close,Low,High,Volume\n");
+
         // For each fund, generate a string of prices with one line per daily price
         for (String aFund : fundNames) {
             ArrayList<TableRow> fundPriceRows;
@@ -270,18 +304,27 @@ public class TspFundPrices {
 
             // Iterate through prices for a single fund, generate output string
             StringBuilder sb = new StringBuilder();
-            for (TableRow tableRow : fundPriceRows) {
-                sb.append(tableRow.toCSV()).append("\n");
-                // System.out.println(tableRow.toCSV());
-            }
+            // System.out.println(tableRow.toCSV());
+            fundPriceRows.forEach(tableRow -> {
+                sb.append(tableRow.toCSV(null)).append("\n");
+                if (fundSymbols.containsKey(aFund)) {
+                    bulkSb.append(fundSymbols.get(aFund)).append(",").append(tableRow.toCSV(aFund)).append("\n");
+                }
+            });
+
 
             // Write the fund's prices to CSV file
             Writer writer = new FileWriter(aFund + ".csv");
+            writer.append("Date,Close,Low,High,Volume\n");
             writer.append(sb);
             writer.close();
         }
 
         priceGrabber.shutdownDriver();
+
+        Writer bulkWriter = new FileWriter("TSP-All-Funds.csv");
+        bulkWriter.append(bulkSb);
+        bulkWriter.close();
     }
 
 }
