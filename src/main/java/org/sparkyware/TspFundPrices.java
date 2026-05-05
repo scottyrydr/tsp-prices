@@ -284,7 +284,7 @@ public class TspFundPrices {
             priceGrabber.loadCsvPrices(cmd.getOptionValue("f"));
         }
         else {
-            URL siteUrl = new URI("https", "tsp.gov/share-price-history", null).toURL();
+            URL siteUrl = new URI("https", "www.tsp.gov/share-price-history", null).toURL();
             LOGGER.log(Level.INFO, "Loading fund prices from website: " + siteUrl);
             priceGrabber = new TspFundPrices(siteUrl);
         }
