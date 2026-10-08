@@ -16,9 +16,18 @@ has been manually downloaded from the TSP website.
 ## Direct URL Access
 
 Execute the program with no command line arguments. The program will direct your local instance of Chrome
-to access the TSP share price history URL, retrieve the previous 30 days of price history,
+to access the public TSP share price history URL, retrieve year-to-date price history,
 and transform that info into CSV files that can be imported into Quicken. This modality does require that a recent
-version of Chrome is installed. Testing was done using Chrome Version 112.0.5615.49 (Official Build) (arm64).
+version of Chrome For Testing is installed. Testing was done using Chrome For Testing Version 154.0.8037.57 (Official
+Build) (arm64).
+
+In addition to saving individual CSV files for each fund type, this program will also write a CSV file containing a
+price
+history of all TSP funds. Quicken (for Mac) can then load a complete fund price history for all TSP funds as a single
+file.
+NOTE - That single file, TSP-All-Funds.csv, uses custom names for the funds since TSP fund prices are not available
+through
+Quicken's automated price download feature.
 
 ## Manual Download CSV Transformation
 
