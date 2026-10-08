@@ -73,7 +73,7 @@ public class TableRow {
      * @return Comma-separated value representation
      */
     public String toCSV(String fundSymbol) {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM d, uuuu");
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMMM d, uuuu");
         StringBuilder buffer = new StringBuilder();
         for (String value : valueStrings) {
 
@@ -83,7 +83,7 @@ public class TableRow {
             }
 
              */
-            
+
             // Change date string from "Mmm dd, YYYY" to "YYYY-mm-dd"
             // FIXME not the right place to do this, and not efficient
             try {
