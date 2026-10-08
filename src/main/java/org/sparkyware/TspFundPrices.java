@@ -70,20 +70,122 @@ public class TspFundPrices {
         LOGGER.log(Level.INFO, "Successfully loaded TSP page: " + title);
 
         // Wait for browser to load dynamic content
-        WebElement firstResult = new WebDriverWait(driver, Duration.ofSeconds(10)).until(
-                ExpectedConditions.presenceOfElementLocated(By.xpath("//table/thead/tr")));
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+        WebElement sharePricesChartContent = wait.until(
+                ExpectedConditions.visibilityOfElementLocated(By.id("share-prices-chart-lifecycle-content")));
+
+        //.until(
+        //ExpectedConditions.presenceOfElementLocated(By.id("share-prices-chart-lifecycle-content")));
         LOGGER.log(Level.INFO, "Dynamic table is present");
 
+        /*
+         * Big changes here. Need to find the tsp-graph-tabs__button element with id "tab-all-prices" and click it to
+         * get the table to load. Then wait for the table to be present.
+         */
+        WebElement tabAllPricesClickable = wait.until(ExpectedConditions.elementToBeClickable(By.id("tab-all-prices")));
+        tabAllPricesClickable.click();
+        WebElement panelAllPricesElement = wait.until(ExpectedConditions.visibilityOfElementLocated(
+                By.xpath("//*[@id=\"share-prices-data-table-all\"]/table/tbody")));
+
         // Pull cells from thead/tr elements - these are the column headings
-        headerRowElements = (ArrayList<WebElement>) driver.findElements(By.xpath("//table/thead/tr"));
+        headerRowElements = (ArrayList<WebElement>) driver.findElements(
+                By.xpath("//*[@id=\"share-prices-data-table-all\"]/table/thead/tr"));
         LOGGER.log(Level.INFO, "Found " + headerRowElements.size() + " 'tr' elements in thead");
 
         // Extract elements from tbody - these are the prices
-        bodyRowElements = (ArrayList<WebElement>) driver.findElements(By.xpath("//table/tbody/tr"));
+        bodyRowElements = (ArrayList<WebElement>) driver.findElements(
+                By.xpath("//*[@id=\"share-prices-data-table-all\"]/table/tbody/tr"));
         LOGGER.log(Level.INFO, "Found " + bodyRowElements.size() + " 'tr' elements in tbody");
 
         // Transform original web page table into array of TableRow objects
         tableRows = genTableRowList();
+    }
+
+    public static void main(String[] args) throws IOException, ParseException, URISyntaxException {
+
+        HashMap<String, String> fundSymbols = new HashMap<>();
+        fundSymbols.put("C Fund", "*CFXX");
+        fundSymbols.put("G Fund", "*GFXX");
+        fundSymbols.put("F Fund", "*FFXX");
+        fundSymbols.put("I Fund", "*IFXX");
+        fundSymbols.put("S Fund", "*SFXX");
+
+        // Set up command line options and parsing
+        Options options = new Options();
+        options.addOption("f", true, "Input CSV file");
+        options.addOption("b", false, "Bulk mode - create consolidated CSV file of all funds");
+        options.addOption("h", false, "Help");
+        options.addOption("v", false, "Verbose logging");
+        CommandLineParser parser = new DefaultParser();
+        CommandLine cmd = parser.parse(options, args);
+
+        if (cmd.hasOption("v")) {
+            System.out.println("setting Logger level to FINE");
+            LOGGER.setLevel(Level.FINE);
+        }
+        else {
+            LOGGER.setLevel(Level.INFO);
+        }
+
+        if (cmd.hasOption("h")) {
+            HelpFormatter formatter = new HelpFormatter();
+            formatter.printHelp("TspFundPrices", options);
+            System.exit(0);
+        }
+
+        TspFundPrices priceGrabber = new TspFundPrices();
+
+        /*
+         https://secure.tsp.gov/components/CORS/getSharePrices.html?Lfunds=0&InvFunds=1&format=CSV&download=1
+         Choose source type (file vs URL) and use TspFundPrices methods to load/parse and create
+         internal representations of the share prices
+        */
+        if (cmd.hasOption("f")) {
+            LOGGER.log(Level.INFO, "Attempting to load fund prices from file: " + cmd.getOptionValue("f"));
+            priceGrabber.loadCsvPrices(cmd.getOptionValue("f"));
+        }
+        else {
+            URL siteUrl = new URI("https", "www.tsp.gov/share-price-history", null).toURL();
+            LOGGER.log(Level.INFO, "Loading fund prices from website: " + siteUrl);
+            priceGrabber = new TspFundPrices(siteUrl);
+        }
+
+        // Get list of all fund names in the prices retrieved from the site
+        List<String> fundNames = priceGrabber.getFundNames();
+
+        // Prepare to generate bulk output
+        StringBuilder bulkSb = new StringBuilder();
+        bulkSb.append("Symbol,Date,Close,Low,High,Volume\n");
+
+        // For each fund, generate a string of prices with one line per daily price
+        for (String aFund : fundNames) {
+            ArrayList<TableRow> fundPriceRows;
+            System.out.println(aFund);
+            fundPriceRows = priceGrabber.getSingleFundTable(aFund);
+
+            // Iterate through prices for a single fund, generate output string
+            StringBuilder sb = new StringBuilder();
+            // System.out.println(tableRow.toCSV());
+            fundPriceRows.forEach(tableRow -> {
+                sb.append(tableRow.toCSV(null)).append("\n");
+                if (fundSymbols.containsKey(aFund)) {
+                    bulkSb.append(fundSymbols.get(aFund)).append(",").append(tableRow.toCSV(aFund)).append("\n");
+                }
+            });
+
+
+            // Write the fund's prices to CSV file
+            Writer writer = new FileWriter(aFund + ".csv");
+            writer.append("Date,Close,Low,High,Volume\n");
+            writer.append(sb);
+            writer.close();
+        }
+
+        priceGrabber.shutdownDriver();
+
+        Writer bulkWriter = new FileWriter("TSP-All-Funds.csv");
+        bulkWriter.append(bulkSb);
+        bulkWriter.close();
     }
 
     private void shutdownDriver() {
@@ -238,93 +340,6 @@ public class TspFundPrices {
             fundPriceRows.add(aRow);
         }
         return fundPriceRows;
-    }
-
-    public static void main(String[] args) throws IOException, ParseException, URISyntaxException {
-
-        HashMap<String, String> fundSymbols = new HashMap<>();
-        fundSymbols.put("C Fund", "*CFXX");
-        fundSymbols.put("G Fund", "*GFXX");
-        fundSymbols.put("F Fund", "*FFXX");
-        fundSymbols.put("I Fund", "*IFXX");
-        fundSymbols.put("S Fund", "*SFXX");
-
-        // Set up command line options and parsing
-        Options options = new Options();
-        options.addOption("f", true, "Input CSV file");
-        options.addOption("b", false, "Bulk mode - create consolidated CSV file of all funds");
-        options.addOption("h", false, "Help");
-        options.addOption("v", false, "Verbose logging");
-        CommandLineParser parser = new DefaultParser();
-        CommandLine cmd = parser.parse(options, args);
-
-        if (cmd.hasOption("v")) {
-            System.out.println("setting Logger level to FINE");
-            LOGGER.setLevel(Level.FINE);
-        }
-        else {
-            LOGGER.setLevel(Level.INFO);
-        }
-
-        if (cmd.hasOption("h")) {
-            HelpFormatter formatter = new HelpFormatter();
-            formatter.printHelp("TspFundPrices", options);
-            System.exit(0);
-        }
-
-        TspFundPrices priceGrabber = new TspFundPrices();
-
-        /*
-         https://secure.tsp.gov/components/CORS/getSharePrices.html?Lfunds=0&InvFunds=1&format=CSV&download=1
-         Choose source type (file vs URL) and use TspFundPrices methods to load/parse and create
-         internal representations of the share prices
-        */
-        if (cmd.hasOption("f")) {
-            LOGGER.log(Level.INFO, "Attempting to load fund prices from file: " + cmd.getOptionValue("f"));
-            priceGrabber.loadCsvPrices(cmd.getOptionValue("f"));
-        }
-        else {
-            URL siteUrl = new URI("https", "www.tsp.gov/share-price-history", null).toURL();
-            LOGGER.log(Level.INFO, "Loading fund prices from website: " + siteUrl);
-            priceGrabber = new TspFundPrices(siteUrl);
-        }
-
-        // Get list of all fund names in the prices retrieved from the site
-        List<String> fundNames = priceGrabber.getFundNames();
-
-        // Prepare to generate bulk output
-        StringBuilder bulkSb = new StringBuilder();
-        bulkSb.append("Symbol,Date,Close,Low,High,Volume\n");
-
-        // For each fund, generate a string of prices with one line per daily price
-        for (String aFund : fundNames) {
-            ArrayList<TableRow> fundPriceRows;
-            System.out.println(aFund);
-            fundPriceRows = priceGrabber.getSingleFundTable(aFund);
-
-            // Iterate through prices for a single fund, generate output string
-            StringBuilder sb = new StringBuilder();
-            // System.out.println(tableRow.toCSV());
-            fundPriceRows.forEach(tableRow -> {
-                sb.append(tableRow.toCSV(null)).append("\n");
-                if (fundSymbols.containsKey(aFund)) {
-                    bulkSb.append(fundSymbols.get(aFund)).append(",").append(tableRow.toCSV(aFund)).append("\n");
-                }
-            });
-
-
-            // Write the fund's prices to CSV file
-            Writer writer = new FileWriter(aFund + ".csv");
-            writer.append("Date,Close,Low,High,Volume\n");
-            writer.append(sb);
-            writer.close();
-        }
-
-        priceGrabber.shutdownDriver();
-
-        Writer bulkWriter = new FileWriter("TSP-All-Funds.csv");
-        bulkWriter.append(bulkSb);
-        bulkWriter.close();
     }
 
 }
