@@ -1,5 +1,6 @@
 package org.sparkyware;
 
+import org.jspecify.annotations.NonNull;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 
@@ -7,10 +8,21 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class TableRow {
 
     private ArrayList<String> valueStrings = null;
+
+    private LocalDate date;
+
+    // Regex for date string as shown on the TSP website (not the same as the CSV downloads)
+    private final String dateRegex = "\\b(?:January|February|March|April|May|June|July|August|September|October" +
+            "|November|December)\\s+(?:0?[1-9]|[12][0-9]|3[01]),\\s+\\d{4}\\b";
+    private final Pattern pattern = Pattern.compile(dateRegex);
+
+    private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMMM d, uuuu");
 
     public TableRow(WebElement aRow, String xpath) {
         populate(aRow, xpath);
@@ -21,7 +33,7 @@ public class TableRow {
      *
      * @param csvString String containing comma-separated values to be parsed
      */
-    public TableRow(String csvString) {
+    public TableRow(@NonNull String csvString) {
         valueStrings = new ArrayList<>();
 
         for (String cellValue : csvString.split(",")) {
@@ -38,6 +50,7 @@ public class TableRow {
      */
     public TableRow(String string, String string2, String string3, String string4, String string5) {
         valueStrings = new ArrayList<>();
+        date = LocalDate.parse(string, DateTimeFormatter.ISO_DATE);
         valueStrings.add(string);
         valueStrings.add(string2);
         valueStrings.add(string3);
@@ -52,8 +65,24 @@ public class TableRow {
         valueStrings = new ArrayList<>();
 
         for (WebElement aRowCell : anElement.findElements(By.xpath(xpath))) {
+
+
             //System.out.println(aRowCell.getText());
-            valueStrings.add(aRowCell.getText());
+
+            String value = aRowCell.getText();
+
+            // Change date string from "Mmm dd, YYYY" to "YYYY-mm-dd"
+            // FIXME maybe not the right place to do this, and not efficient
+            Matcher matcher = pattern.matcher(value);
+            if (matcher.matches()) {
+                try {
+                    date = LocalDate.parse(aRowCell.getText(), formatter);
+                    value = date.format(DateTimeFormatter.ISO_DATE);
+                } catch (DateTimeParseException e) {
+                    // e.printStackTrace();
+                }
+            }
+            valueStrings.add(value);
         }
 
     }
@@ -73,25 +102,9 @@ public class TableRow {
      * @return Comma-separated value representation
      */
     public String toCSV(String fundSymbol) {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMMM d, uuuu");
         StringBuilder buffer = new StringBuilder();
         for (String value : valueStrings) {
 
-            /*
-            if(buffer.length() == 0 && fundSymbol != null) {
-                buffer.append(fundSymbol).append(",");
-            }
-
-             */
-
-            // Change date string from "Mmm dd, YYYY" to "YYYY-mm-dd"
-            // FIXME not the right place to do this, and not efficient
-            try {
-                LocalDate date = LocalDate.parse(value, formatter);
-                value = date.format(DateTimeFormatter.ISO_DATE);
-            } catch (DateTimeParseException e) {
-                // e.printStackTrace();
-            }
 
             buffer.append(value).append(",");
         }
@@ -107,6 +120,10 @@ public class TableRow {
             System.out.println(cellValue);
         }
 
+    }
+
+    public boolean isRecent(int maxDaysOld) {
+        return date.isAfter(LocalDate.now().minusDays(maxDaysOld));
     }
 
 }

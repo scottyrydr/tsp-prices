@@ -1,12 +1,13 @@
 # tsp-prices
 
-Retrieve Thrift Savings Plan Fund prices and save as CSV files.
+Retrieve Thrift Savings Plan Fund prices and save in CSV file(s) that can be imported into Quicken.
 
-The Thrift Savings Plan (TSP) does not interface directly with financial management software, such as Quicken. This
-program downloads
+In my experience, the Thrift Savings Plan (TSP) does not easily interface directly with financial management software,
+such as Quicken.
+This program downloads
 a 30 day history of prices for all TSP funds, and writes them to individual CSV files that can be imported into Quicken.
 
-This software does not have access to any private information, it
+This software does not have access to any private account information, it
 only accesses share price history information that is publicly available on the TSP
 website. This software neither requires nor requests authentication with the TSP website.
 
@@ -15,7 +16,15 @@ has been manually downloaded from the TSP website.
 
 ## Direct URL Access
 
-Execute the program with no command line arguments. The program will direct your local instance of Chrome
+The TSP website has changed how it presents share price history information. In the past, the share price history
+was available in CSV format at a static URL. The new presentation is dynamic and
+requires interaction with the website to expose and render the information, which adds complexity for an automated
+download.
+This program instantiates and controls a local instance of Chrome For Testing to access the TSP website and retrieve the
+share price history information. That raw html is then parsed and transformed into CSV files that can be imported into
+Quicken.
+
+Execute the program with no command line arguments. The program will direct your local instance of Chrome For Testing
 to access the public TSP share price history URL, retrieve year-to-date price history,
 and transform that info into CSV files that can be imported into Quicken. This modality does require that a recent
 version of Chrome For Testing is installed. Testing was done using Chrome For Testing Version 154.0.8037.57 (Official

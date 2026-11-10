@@ -74,8 +74,6 @@ public class TspFundPrices {
         WebElement sharePricesChartContent = wait.until(
                 ExpectedConditions.visibilityOfElementLocated(By.id("share-prices-chart-lifecycle-content")));
 
-        //.until(
-        //ExpectedConditions.presenceOfElementLocated(By.id("share-prices-chart-lifecycle-content")));
         LOGGER.log(Level.INFO, "Dynamic table is present");
 
         /*
@@ -103,6 +101,7 @@ public class TspFundPrices {
 
     public static void main(String[] args) throws IOException, ParseException, URISyntaxException {
 
+        // Map of TSP's fund names to fund name in Quicken
         HashMap<String, String> fundSymbols = new HashMap<>();
         fundSymbols.put("C Fund", "*CFXX");
         fundSymbols.put("G Fund", "*GFXX");
@@ -157,7 +156,8 @@ public class TspFundPrices {
         StringBuilder bulkSb = new StringBuilder();
         bulkSb.append("Symbol,Date,Close,Low,High,Volume\n");
 
-        // For each fund, generate a string of prices with one line per daily price
+        /* For each fund, generate a string of prices with one line per daily price. Then write fund prices to a
+            CSV file named for that particular fund. */
         for (String aFund : fundNames) {
             ArrayList<TableRow> fundPriceRows;
             System.out.println(aFund);
@@ -168,11 +168,10 @@ public class TspFundPrices {
             // System.out.println(tableRow.toCSV());
             fundPriceRows.forEach(tableRow -> {
                 sb.append(tableRow.toCSV(null)).append("\n");
-                if (fundSymbols.containsKey(aFund)) {
+                if (fundSymbols.containsKey(aFund) && tableRow.isRecent(60)) {
                     bulkSb.append(fundSymbols.get(aFund)).append(",").append(tableRow.toCSV(aFund)).append("\n");
                 }
             });
-
 
             // Write the fund's prices to CSV file
             Writer writer = new FileWriter(aFund + ".csv");
@@ -181,6 +180,7 @@ public class TspFundPrices {
             writer.close();
         }
 
+        // Quit the WebDriver
         priceGrabber.shutdownDriver();
 
         Writer bulkWriter = new FileWriter("TSP-All-Funds.csv");
@@ -234,12 +234,13 @@ public class TspFundPrices {
      */
     private ArrayList<TableRow> genTableRowList() {
 
+        // Create TableRows from the headers of the table. Add to tableRows list
         for (WebElement anElement : this.headerRowElements) {
             LOGGER.log(Level.FINE, "Raw row from table: {0}", anElement.getText());
             TableRow aTableRow = new TableRow(anElement, "th");
             tableRows.add(aTableRow);
         }
-
+        // Create TableRows from the body elements (prices). Add to tableRows list
         for (WebElement anElement : this.bodyRowElements) {
             LOGGER.log(Level.FINE, "Raw row from table: {0}", anElement.getText());
             TableRow aTableRow = new TableRow(anElement, "th|td");
