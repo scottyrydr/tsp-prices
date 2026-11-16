@@ -2,6 +2,7 @@ package org.sparkyware;
 
 import io.github.bonigarcia.wdm.WebDriverManager;
 import org.apache.commons.cli.*;
+import org.jspecify.annotations.NonNull;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
@@ -10,13 +11,13 @@ import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
-import java.io.FileNotFoundException;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.Writer;
+import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.net.URLConnection;
+import java.nio.channels.Channels;
+import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.Duration;
@@ -54,7 +55,7 @@ public class TspFundPrices {
         tableRows = new ArrayList<>();
     }
 
-    public TspFundPrices(URL url) {
+    public TspFundPrices(@NonNull URL url) {
         tableRows = new ArrayList<>();
 
         LOGGER.log(Level.INFO, "Connecting to TSP website for prices...");
@@ -113,6 +114,7 @@ public class TspFundPrices {
         Options options = new Options();
         options.addOption("f", true, "Input CSV file");
         options.addOption("b", false, "Bulk mode - create consolidated CSV file of all funds");
+        options.addOption("d", false, "Direct URL - Retrieve TSP's consolidated fund price CSV file");
         options.addOption("h", false, "Help");
         options.addOption("v", false, "Verbose logging");
         CommandLineParser parser = new DefaultParser();
@@ -144,10 +146,28 @@ public class TspFundPrices {
             priceGrabber.loadCsvPrices(cmd.getOptionValue("f"));
         }
         else {
-            URL siteUrl = new URI("https", "www.tsp.gov/share-price-history", null).toURL();
-            LOGGER.log(Level.INFO, "Loading fund prices from website: " + siteUrl);
-            priceGrabber = new TspFundPrices(siteUrl);
+            if (cmd.hasOption("d")) {
+                LOGGER.log(Level.INFO, "Loading fund prices from TSP's CSV download URL");
+                //https://tsp.gov/data/fund-price-history.csv
+                URL siteUrl = new URL("https://tsp.gov/data/fund-price-history.csv");
+                LOGGER.log(Level.INFO, "Loading CSV fund prices from website: " + siteUrl);
+                URLConnection urlConnection = siteUrl.openConnection();
+                urlConnection.setRequestProperty("User-Agent",
+                        "Mozilla/5.0 (Macintosh; Intel Mac OS X 15_8_3) AppleWebKit/605.1.15 (KHTML, like Gecko) " +
+                                "Version/27.0 Safari/605.1.15");
+                InputStream in = urlConnection.getInputStream();
+                ReadableByteChannel rbc = Channels.newChannel(in);
+                FileOutputStream fos = new FileOutputStream("download.csv");
+                fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
+                priceGrabber.loadCsvPrices("download.csv");
+            }
+            else {
+                URL siteUrl = new URI("https", "www.tsp.gov/share-price-history", null).toURL();
+                LOGGER.log(Level.INFO, "Loading fund prices from website: " + siteUrl);
+                priceGrabber = new TspFundPrices(siteUrl);
+            }
         }
+
 
         // Get list of all fund names in the prices retrieved from the site
         List<String> fundNames = priceGrabber.getFundNames();
@@ -329,8 +349,8 @@ public class TspFundPrices {
 
             ArrayList<String> valueStrings = tableRow.getValueStrings();
 
-            // Skip rows starting with "Date"
-            if (valueStrings.get(0).matches("[Dd]ate") || valueStrings.get(0).isEmpty()) {
+            // Skip rows: that are empty, starting with "Date", or where the first value is empty
+            if (valueStrings.isEmpty() || valueStrings.get(0).matches("[Dd]ate") || valueStrings.get(0).isEmpty()) {
                 continue;
             }
 
