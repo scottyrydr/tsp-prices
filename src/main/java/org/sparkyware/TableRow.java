@@ -39,6 +39,10 @@ public class TableRow {
         for (String cellValue : csvString.split(",")) {
             // Remove spaces at beginning of a cell value
             cellValue = cellValue.replaceAll("^ ", "");
+            // Replace empty cell values with "0" so TableRows are created correctly
+            if (cellValue.isEmpty()) {
+                cellValue = "0";
+            }
             valueStrings.add(cellValue);
             // System.out.println(cellValue);
         }
